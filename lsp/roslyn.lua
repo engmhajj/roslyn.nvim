@@ -97,7 +97,15 @@ function M.setup(opts)
     opts = opts or {}
     -- Set cmd using default_cmd, allowing opts.cmd override if provided
     config.cmd = default_cmd(opts)
+    if not config.cmd then
+        vim.notify("roslyn.nvim: Could not find Roslyn LSP executable (via Mason or opts.cmd)", vim.log.levels.ERROR)
+        return
+    end
 
+    -- Use user-defined root_dir if provided
+    if opts.root_dir then
+        config.root_dir = opts.root_dir
+    end
     -- Merge other options if necessary (you can expand this if you have more)
     for k, v in pairs(opts) do
         if k ~= "cmd" then
