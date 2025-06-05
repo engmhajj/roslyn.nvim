@@ -5,6 +5,7 @@ local utils = require("roslyn.sln.utils")
 local function default_cmd(opts)
     opts = opts or {}
 
+    -- If a custom command is provided, use it
     if opts.cmd then
         return opts.cmd
     end
@@ -15,6 +16,7 @@ local function default_cmd(opts)
     local mason_path = vim.fs.joinpath(vim.fn.stdpath("data"), "mason", "bin", "roslyn")
     local mason_cmd = iswin and (mason_path .. ".cmd") or mason_path
 
+    -- Check if the executable exists
     if vim.uv.fs_stat(mason_cmd) == nil then
         return nil
     end
@@ -31,8 +33,7 @@ end
 local config = {
     name = "roslyn",
     filetypes = { "cs" },
-    -- Will be set dynamically in setup with opts
-    cmd = nil,
+    cmd = default_cmd(), -- Ensure cmd is set
     cmd_env = {
         Configuration = vim.env.Configuration or "Debug",
     },
@@ -97,15 +98,7 @@ function M.setup(opts)
     opts = opts or {}
     -- Set cmd using default_cmd, allowing opts.cmd override if provided
     config.cmd = default_cmd(opts)
-    if not config.cmd then
-        vim.notify("roslyn.nvim: Could not find Roslyn LSP executable (via Mason or opts.cmd)", vim.log.levels.ERROR)
-        return
-    end
 
-    -- Use user-defined root_dir if provided
-    if opts.root_dir then
-        config.root_dir = opts.root_dir
-    end
     -- Merge other options if necessary (you can expand this if you have more)
     for k, v in pairs(opts) do
         if k ~= "cmd" then
