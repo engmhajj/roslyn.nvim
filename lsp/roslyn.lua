@@ -33,7 +33,7 @@ end
 local config = {
     name = "roslyn",
     filetypes = { "cs" },
-    cmd = default_cmd(), -- Ensure cmd is set
+    cmd = {}, -- placeholder; set in setup() to avoid nil cmd error
     cmd_env = {
         Configuration = vim.env.Configuration or "Debug",
     },
