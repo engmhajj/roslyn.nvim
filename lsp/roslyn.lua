@@ -22,7 +22,7 @@ local function default_cmd(opts)
     end
 
     return {
-        mason_cmd,
+        "/Users/mohamadelhajhassan/.local/share/nvim/mason/bin/roslyn",
         "--logLevel=Information",
         "--extensionLogDirectory=" .. vim.fs.dirname(vim.lsp.get_log_path()),
         "--stdio",
