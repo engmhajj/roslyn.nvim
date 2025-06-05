@@ -1,29 +1,26 @@
 local utils = require("roslyn.sln.utils")
 
----@return string[]?
-local function default_cmd()
+---@param opts table|nil
+---@return string[]|nil
+local function default_cmd(opts)
+    opts = opts or {}
+
+    if opts.cmd then
+        return opts.cmd
+    end
+
     local sysname = vim.uv.os_uname().sysname:lower()
-    local iswin = not not (sysname:find("windows") or sysname:find("mingw"))
+    local iswin = sysname:find("windows") or sysname:find("mingw")
 
     local mason_path = vim.fs.joinpath(vim.fn.stdpath("data"), "mason", "bin", "roslyn")
-    local mason_cmd = iswin and string.format("%s.cmd", mason_path) or mason_path
-    local function get_cmd(opts)
-        if opts.cmd then
-            return opts.cmd
-        end
-        return {
-            mason_cmd,
-            "--logLevel=Information",
-            "--stdio",
-        }
-    end
-    local cmd = get_cmd(opts)
+    local mason_cmd = iswin and (mason_path .. ".cmd") or mason_path
+
     if vim.uv.fs_stat(mason_cmd) == nil then
         return nil
     end
 
     return {
-        cmd,
+        mason_cmd,
         "--logLevel=Information",
         "--extensionLogDirectory=" .. vim.fs.dirname(vim.lsp.get_log_path()),
         "--stdio",
@@ -31,16 +28,16 @@ local function default_cmd()
 end
 
 ---@type vim.lsp.Config
-return {
+local config = {
     name = "roslyn",
     filetypes = { "cs" },
-    cmd = default_cmd(),
+    -- Will be set dynamically in setup with opts
+    cmd = nil,
     cmd_env = {
         Configuration = vim.env.Configuration or "Debug",
     },
     capabilities = {
         textDocument = {
-            -- HACK: Doesn't show any diagnostics if we do not set this to true
             diagnostic = {
                 dynamicRegistration = true,
             },
@@ -57,7 +54,6 @@ return {
     on_init = {
         function(client)
             local on_init = require("roslyn.lsp.on_init")
-
             local config = require("roslyn.config").get()
             local selected_solution = vim.g.roslyn_nvim_selected_solution
             if config.lock_target and selected_solution then
@@ -66,7 +62,6 @@ return {
 
             local bufnr = vim.api.nvim_get_current_buf()
             local files = utils.find_files_with_extensions(client.config.root_dir, { ".sln", ".slnx", ".slnf" })
-
             local solution = utils.predict_target(bufnr, files)
             if solution then
                 return on_init.sln(client, solution)
@@ -94,3 +89,23 @@ return {
     commands = require("roslyn.lsp.commands"),
     handlers = require("roslyn.lsp.handlers"),
 }
+
+-- Setup function for the plugin to be called with options
+local M = {}
+
+function M.setup(opts)
+    opts = opts or {}
+    -- Set cmd using default_cmd, allowing opts.cmd override if provided
+    config.cmd = default_cmd(opts)
+
+    -- Merge other options if necessary (you can expand this if you have more)
+    for k, v in pairs(opts) do
+        if k ~= "cmd" then
+            config[k] = v
+        end
+    end
+
+    require("roslyn").setup(config)
+end
+
+return M
