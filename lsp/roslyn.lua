@@ -7,13 +7,23 @@ local function default_cmd()
 
     local mason_path = vim.fs.joinpath(vim.fn.stdpath("data"), "mason", "bin", "roslyn")
     local mason_cmd = iswin and string.format("%s.cmd", mason_path) or mason_path
-
+    local function get_cmd(opts)
+        if opts.cmd then
+            return opts.cmd
+        end
+        return {
+            mason_cmd,
+            "--logLevel=Information",
+            "--stdio",
+        }
+    end
+    local cmd = get_cmd(opts)
     if vim.uv.fs_stat(mason_cmd) == nil then
         return nil
     end
 
     return {
-        mason_cmd,
+        cmd,
         "--logLevel=Information",
         "--extensionLogDirectory=" .. vim.fs.dirname(vim.lsp.get_log_path()),
         "--stdio",
